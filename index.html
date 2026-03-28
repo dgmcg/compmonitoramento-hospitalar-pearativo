@@ -3,196 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics Pro — Produção Hospitalar 2025</title>
+    <title>Gestão Hospitalar — Monitoramento SES-PE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-main: #F8FAFC;
-            --bg-card: #FFFFFF;
             --primary: #0F172A;
-            --secondary: #64748B;
-            --accent: #3B82F6;
+            --accent: #2563EB;
+            --bg-body: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --text-main: #1E293B;
+            --text-sub: #64748B;
+            --border: #E2E8F0;
             --success: #10B981;
             --warning: #F59E0B;
             --danger: #EF4444;
-            --border: #E2E8F0;
-            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-md: 10px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--primary); padding: 20px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 1.5rem; line-height: 1.5; }
 
-        .container { max-width: 1400px; margin: 0 auto; }
+        /* Header Layout */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+        .brand h1 { font-size: 1.5rem; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; }
+        .brand p { color: var(--text-sub); font-size: 0.875rem; }
 
-        /* Header & Filters */
-        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
-        .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
-        .header p { color: var(--secondary); font-size: 14px; }
+        /* Modern Filter Bar */
+        .filter-bar { background: var(--bg-card); padding: 0.75rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .filter-group { display: flex; align-items: center; gap: 0.5rem; }
+        .filter-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-sub); text-transform: uppercase; }
+        select { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.875rem; color: var(--text-main); cursor: pointer; font-weight: 500; outline: none; transition: 0.2s; }
+        select:hover { border-color: var(--accent); }
 
-        .controls { display: flex; gap: 12px; background: white; padding: 8px; border-radius: 10px; border: 1px solid var(--border); }
-        select { border: none; outline: none; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--primary); padding: 4px 8px; }
+        /* KPI Bento Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .kpi-card { background: var(--bg-card); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border); transition: 0.3s; }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.05); }
+        .kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--text-sub); text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+        .kpi-value { font-size: 1.75rem; font-weight: 700; display: block; letter-spacing: -0.02em; }
+        .kpi-sub { font-size: 0.75rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem; font-weight: 500; }
 
-        /* KPI Cards */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .kpi-card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); transition: transform 0.2s; }
-        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
-        .kpi-label { font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: uppercase; margin-bottom: 8px; }
-        .kpi-value { font-size: 28px; font-weight: 700; display: block; }
-        .kpi-sub { font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-
-        /* Tabs */
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
-        .tab-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: white; font-size: 13px; font-weight: 500; color: var(--secondary); cursor: pointer; white-space: nowrap; transition: 0.2s; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* Main Content Grid */
-        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .card { background: white; border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-
-        /* Custom Table */
-        .custom-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .custom-table th { text-align: left; padding: 12px; color: var(--secondary); font-weight: 500; border-bottom: 1px solid var(--border); }
-        .custom-table td { padding: 12px; border-bottom: 1px solid var(--border); }
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-        .badge-success { background: #DCFCE7; color: #166534; }
-        .badge-warning { background: #FEF3C7; color: #92400E; }
-        .badge-danger { background: #FEE2E2; color: #991B1B; }
-
-        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="header">
-        <div>
-            <h1>Dashboard de Gestão Hospitalar</h1>
-            <p>Monitoramento de Contratos de Gestão — SES-PE</p>
-        </div>
-        <div class="controls">
-            <select id="sel-ind" onchange="renderAll()">
-                <option value="all">📊 Todos Indicadores</option>
-                <option value="cm">Consultas Médicas</option>
-                <option value="cr">Cirurgias Realizadas</option>
-                <option value="sh">Saídas Hospitalares</option>
-            </select>
-            <select id="sel-mes" onchange="renderAll()">
-                <option value="all">📅 Ano de 2025</option>
-                <option value="0">Janeiro</option><option value="5">Junho</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="kpi-grid" id="kpi-container">
-        </div>
-
-    <div class="tabs">
-        <button class="tab-btn active" onclick="changeTab('visão-geral', this)">Visão Geral</button>
-        <button class="tab-btn" onclick="changeTab('eficiencia', this)">Eficiência por Leito</button>
-        <button class="tab-btn" onclick="changeTab('tendencia', this)">Sazonalidade</button>
-    </div>
-
-    <div class="main-grid">
-        <div class="card">
-            <div class="card-title">Ranking Consolidado de Unidades <span>(Meta vs Realizado)</span></div>
-            <div style="height: 350px;"><canvas id="mainChart"></canvas></div>
-        </div>
-        <div class="card">
-            <div class="card-title">Status por OSS</div>
-            <table class="custom-table" id="ossTable">
-                <thead>
-                    <tr><th>Unidade</th><th>OSS</th><th>% Meta</th></tr>
-                </thead>
-                <tbody id="ossBody">
-                    </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Os dados originais do seu sistema
-    const HOSPS = ['H. Mestre Vitalino','H. Dom Helder','H. Miguel Arraes','H. Nª Sra. Graças','H. Pelópidas'];
-    const OSS_DATA = ['HTRI','FGH','FGH','FGH','FGH'];
-    const CORES = ['#3B82F6', '#10B981', '#F59E0B', '#6366F1', '#EC4899'];
-
-    function renderAll() {
-        renderKPIs();
-        renderCharts();
-        renderTable();
-    }
-
-    function renderKPIs() {
-        const container = document.getElementById('kpi-container');
-        const kpis = [
-            { label: 'Produção Acumulada', val: '48.231', sub: '+12% vs 2024', color: 'var(--primary)' },
-            { label: 'Atingimento Médio', val: '94.2%', sub: 'Dentro da Meta', color: 'var(--success)' },
-            { label: 'Unidades em Alerta', val: '01', sub: 'H. Miguel Arraes', color: 'var(--danger)' },
-            { label: 'Eficiência Geral', val: '1.4', sub: 'Proced/Leito', color: 'var(--accent)' }
-        ];
-        
-        container.innerHTML = kpis.map(k => `
-            <div class="kpi-card">
-                <span class="kpi-label">${k.label}</span>
-                <span class="kpi-value" style="color: ${k.color}">${k.val}</span>
-                <span class="kpi-sub" style="color: ${k.color === 'var(--danger)' ? 'red' : 'inherit'}">${k.sub}</span>
-            </div>
-        `).join('');
-    }
-
-    let chartInstance = null;
-    function renderCharts() {
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        if(chartInstance) chartInstance.destroy();
-
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: HOSPS,
-                datasets: [{
-                    label: '% Meta Atingida',
-                    data: [102, 98, 82, 110, 95],
-                    backgroundColor: ['#10B981', '#10B981', '#EF4444', '#10B981', '#F59E0B'],
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, max: 120, grid: { display: false } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-    }
-
-    function renderTable() {
-        const body = document.getElementById('ossBody');
-        const data = [
-            {n: 'Mestre Vitalino', oss: 'HTRI', p: '102%'},
-            {n: 'Dom Helder', oss: 'FGH', p: '98%'},
-            {n: 'Miguel Arraes', oss: 'FGH', p: '82%'},
-        ];
-        body.innerHTML = data.map(d => `
-            <tr>
-                <td><b>${d.n}</b></td>
-                <td><span class="badge" style="background:#F1F5F9">${d.oss}</span></td>
-                <td><span class="badge ${parseInt(d.p) > 90 ? 'badge-success' : 'badge-danger'}">${d.p}</span></td>
-            </tr>
-        `).join('');
-    }
-
-    function changeTab(name, btn) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        // Adicionar lógica de troca de dados aqui
-    }
-
-    window.onload = renderAll;
-</script>
-</body>
-</html>
+        /* Navigation Tabs */
+        .nav-tabs { display: flex; gap: 0.5rem; background: #E2E8F0; padding: 0.4rem; border-radius: var(--radius-md); margin-bottom: 1.
