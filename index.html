@@ -1,157 +1,445 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão Hospitalar — Monitoramento SES-PE</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0F172A;
-            --accent: #2563EB;
-            --bg-body: #F1F5F9;
-            --bg-card: #FFFFFF;
-            --text-main: #1E293B;
-            --text-sub: #64748B;
-            --border: #E2E8F0;
-            --success: #10B981;
-            --warning: #F59E0B;
-            --danger: #EF4444;
-            --radius-lg: 16px;
-            --radius-md: 10px;
-        }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); padding: 1.5rem; line-height: 1.5; }
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.db{padding:1rem}
+.hdr{margin-bottom:1rem}
+.hdr h1{font-size:18px;font-weight:500;color:var(--color-text-primary)}
+.hdr p{font-size:12px;color:var(--color-text-secondary);margin-top:2px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:center}
+.filters label{font-size:12px;color:var(--color-text-secondary)}
+.filters select{font-size:12px;padding:4px 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1rem}
+.kpi{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.kpi .lbl{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px;line-height:1.3}
+.kpi .val{font-size:20px;font-weight:500}
+.kpi .sub{font-size:10px;color:var(--color-text-secondary);margin-top:2px}
+.kpi.green .val{color:#1D9E75}.kpi.amber .val{color:#BA7517}.kpi.red .val{color:#A32D2D}.kpi.blue .val{color:#185FA5}
+.tab-bar{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.tab-btn{font-size:11px;padding:4px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer}
+.tab-btn.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.section{margin-bottom:1rem}
+.sec-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.chart-wrap{position:relative;width:100%}
+.rank-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;margin-bottom:1rem}
+.rank-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.rank-card .card-head{padding:8px 12px;font-size:12px;font-weight:500;color:var(--color-text-primary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:6px}
+.rank-card .card-head .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rank-row{display:grid;align-items:center;padding:6px 10px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px;gap:4px}
+.rank-row:last-child{border-bottom:none}
+.rank-row.meta-row{grid-template-columns:22px 1fr 70px 50px 50px}
+.rank-row.vol-row{grid-template-columns:22px 1fr 80px 60px}
+.col-hdr{display:grid;padding:4px 10px;gap:4px;background:var(--color-background-secondary);font-size:10px;color:var(--color-text-secondary);font-weight:500}
+.col-hdr.meta-hdr{grid-template-columns:22px 1fr 70px 50px 50px}
+.col-hdr.vol-hdr{grid-template-columns:22px 1fr 80px 60px}
+.rank-pos{font-size:12px;text-align:center}
+.rank-name{color:var(--color-text-primary);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-bar-wrap{height:7px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.rank-bar{height:7px;border-radius:4px;transition:width .3s}
+.rank-pct{text-align:right;font-weight:500}
+.rank-prod{text-align:right;color:var(--color-text-secondary)}
+.rank-vol{text-align:right;font-weight:500;color:var(--color-text-primary)}
+.rank-vol-bar{height:7px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden}
+.rank-vol-fill{height:7px;border-radius:4px}
+.badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:500}
+.badge.green{background:#EAF3DE;color:#3B6D11}.badge.amber{background:#FAEEDA;color:#854F0B}.badge.red{background:#FCEBEB;color:#A32D2D}
+.consol-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.consol-table th{text-align:left;font-weight:500;font-size:10px;color:var(--color-text-secondary);padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.consol-table td{padding:7px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);font-size:11px}
+.consol-table tr:last-child td{border-bottom:none}
+.consol-table .winner{background:var(--color-background-secondary)}
+.progress-cell{display:flex;align-items:center;gap:5px}
+.prog-bar{flex:1;height:8px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden;min-width:50px}
+.prog-fill{height:8px;border-radius:4px}
+.hosp-leg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;font-size:11px;color:var(--color-text-secondary)}
+.hosp-leg span{display:flex;align-items:center;gap:3px}
+.hosp-leg b{width:10px;height:10px;border-radius:2px;display:inline-block;flex-shrink:0}
+@media(max-width:560px){.rank-grid{grid-template-columns:1fr}.rank-row.meta-row{grid-template-columns:20px 1fr 60px 44px 44px}.rank-row.vol-row{grid-template-columns:20px 1fr 70px 52px}}
+</style>
 
-        /* Header Layout */
-        .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
-        .brand h1 { font-size: 1.5rem; font-weight: 700; color: var(--primary); letter-spacing: -0.02em; }
-        .brand p { color: var(--text-sub); font-size: 0.875rem; }
+<div class="db">
+<div class="hdr">
+  <h1>Dashboard de Produção Hospitalar — 2025</h1>
+  <p>FGH e HTRI · 5 hospitais · Meta mínima: 85% · Superação de meta: 100%+</p>
+</div>
 
-        /* Modern Filter Bar */
-        .filter-bar { background: var(--bg-card); padding: 0.75rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .filter-group { display: flex; align-items: center; gap: 0.5rem; }
-        .filter-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-sub); text-transform: uppercase; }
-        select { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.75rem; font-size: 0.875rem; color: var(--text-main); cursor: pointer; font-weight: 500; outline: none; transition: 0.2s; }
-        select:hover { border-color: var(--accent); }
-
-        /* KPI Bento Grid */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .kpi-card { background: var(--bg-card); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border); transition: 0.3s; }
-        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.05); }
-        .kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--text-sub); text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
-        .kpi-value { font-size: 1.75rem; font-weight: 700; display: block; letter-spacing: -0.02em; }
-        .kpi-sub { font-size: 0.75rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.25rem; font-weight: 500; }
-
-        /* Navigation Tabs */
-        .nav-tabs { display: flex; gap: 0.5rem; background: #E2E8F0; padding: 0.4rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; width: fit-content; overflow-x: auto; }
-        .tab-btn { border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: 0.2s; background: transparent; color: var(--text-sub); white-space: nowrap; }
-        .tab-btn.active { background: white; color: var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
-        /* Main Section Cards */
-        .section-card { background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .card-header { margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-        .card-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
-
-        /* Enhanced Tables */
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--text-sub); padding: 1rem; border-bottom: 1px solid var(--border); letter-spacing: 0.05em; }
-        .data-table td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
-        .data-table tr:hover { background: #F8FAFC; }
-
-        /* Badges */
-        .badge { padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-        .badge-green { background: #DCFCE7; color: #166534; }
-        .badge-amber { background: #FEF3C7; color: #92400E; }
-        .badge-red { background: #FEE2E2; color: #991B1B; }
-
-        /* Ranking Cards Grid */
-        .ranking-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
-        .rank-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-        .rank-card-header { background: #F8FAFC; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.8125rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
-        
-        /* Helpers */
-        .mt-4 { margin-top: 1rem; }
-        .chart-container { position: relative; width: 100%; min-height: 300px; }
-
-        @media (max-width: 768px) { .dashboard-header { flex-direction: column; align-items: flex-start; } .filter-bar { width: 100%; overflow-x: auto; } }
-    </style>
-</head>
-<body>
-
-<div class="dashboard-header">
-    <div class="brand">
-        <h1>Produção Hospitalar DGMCG</h1>
-        <p>Dados Consolidados 2025 · FGH & HTRI</p>
-    </div>
-    <div class="filter-bar">
-        <div class="filter-group">
-            <label>Indicador</label>
-            <select id="sel-ind" onchange="renderAll()">
-                <option value="all">📊 Todos os Indicadores</option>
-                <option value="cm">Consultas Médicas</option>
-                <option value="sh">Saídas Hospitalares</option>
-                <option value="cr">Cirurgias Realizadas</option>
-                <option value="ue">Urgência e Emergência</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>Mês</label>
-            <select id="sel-mes" onchange="renderAll()">
-                <option value="all">📅 Acumulado 2025</option>
-                <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
-                <option value="5">Junho</option>
-            </select>
-        </div>
-    </div>
+<div class="filters">
+  <label>Indicador:</label>
+  <select id="sel-ind" onchange="renderAll()">
+    <option value="all">Todos</option>
+    <option value="cm">Consultas Médicas</option>
+    <option value="cnm">Consultas Não Médicas</option>
+    <option value="sh">Saídas Hospitalares</option>
+    <option value="cr">Cirurgias Realizadas</option>
+    <option value="ue">Urgência e Emergência</option>
+  </select>
+  <label>Período:</label>
+  <select id="sel-mes" onchange="renderAll()">
+    <option value="all">Ano todo</option>
+    <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+    <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+    <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+    <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+  </select>
 </div>
 
 <div class="kpi-grid" id="kpi-grid"></div>
 
-<div class="nav-tabs">
-    <button class="tab-btn active" onclick="showTab('ranking-meta',this)">% Atingimento</button>
-    <button class="tab-btn" onclick="showTab('ranking-vol',this)">Volume Total</button>
-    <button class="tab-btn" onclick="showTab('consolidado',this)">Desempenho Geral</button>
-    <button class="tab-btn" onclick="showTab('tendencia',this)">Análise Temporal</button>
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('ranking-meta',this)">Ranking % Meta</button>
+  <button class="tab-btn" onclick="showTab('ranking-vol',this)">Ranking Volume</button>
+  <button class="tab-btn" onclick="showTab('consolidado',this)">Ranking Consolidado</button>
+  <button class="tab-btn" onclick="showTab('comparativo',this)">Comparativo</button>
+  <button class="tab-btn" onclick="showTab('tendencia',this)">Tendência</button>
+  <button class="tab-btn" onclick="showTab('eficiencia',this)">Eficiência/Leitos</button>
 </div>
 
-<div id="tab-ranking-meta" class="section-card">
-    <div class="card-title mt-4">Ranking de Metas por Indicador</div>
-    <div class="ranking-grid mt-4" id="rank-meta-grid"></div>
+<div id="tab-ranking-meta">
+  <div class="sec-title">Ranking de % Atingimento de Meta por Indicador (com volume produzido)</div>
+  <div class="rank-grid" id="rank-meta-grid"></div>
 </div>
 
-<div id="tab-ranking-vol" class="section-card" style="display:none">
-    <div class="card-title mt-4">Ranking por Volume de Produção</div>
-    <div class="ranking-grid mt-4" id="rank-vol-grid"></div>
+<div id="tab-ranking-vol" style="display:none">
+  <div class="sec-title">Ranking de Volume Total Produzido por Indicador</div>
+  <div class="rank-grid" id="rank-vol-grid"></div>
 </div>
 
-<div id="tab-consolidado" class="section-card" style="display:none">
-    <div class="card-header">
-        <div class="card-title">Consolidado das Unidades</div>
-    </div>
-    <div class="chart-container" style="height: 250px; margin-bottom: 2rem;">
-        <canvas id="ch-consol"></canvas>
-    </div>
-    <table class="data-table" id="consol-table"></table>
+<div id="tab-consolidado" style="display:none">
+  <div class="sec-title">Ranking Consolidado de Desempenho Geral 2025</div>
+  <div class="chart-wrap" style="height:190px;margin-bottom:10px"><canvas id="ch-consol"></canvas></div>
+  <table class="consol-table" id="consol-table"></table>
 </div>
 
-<div id="tab-tendencia" class="section-card" style="display:none">
-    <div class="card-title mt-4">Evolução da Meta (Janeiro - Dezembro)</div>
-    <div class="chart-container mt-4">
-        <canvas id="ch-tend"></canvas>
-    </div>
+<div id="tab-comparativo" style="display:none">
+  <div class="sec-title">Produção Total vs % Meta por Hospital</div>
+  <div class="hosp-leg" id="leg-comp"></div>
+  <div class="chart-wrap" style="height:260px"><canvas id="ch-comp"></canvas></div>
 </div>
 
+<div id="tab-tendencia" style="display:none">
+  <div class="sec-title">Tendência de % Meta ao Longo do Ano</div>
+  <div class="hosp-leg" id="leg-tend"></div>
+  <div class="chart-wrap" style="height:260px"><canvas id="ch-tend"></canvas></div>
+</div>
+
+<div id="tab-eficiencia" style="display:none">
+  <div class="sec-title">Eficiência Produtiva por Leito</div>
+  <div class="hosp-leg" id="leg-ef"></div>
+  <div class="chart-wrap" style="height:250px"><canvas id="ch-ef"></canvas></div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-    // [INSERIR AQUI EXATAMENTE OS DADOS 'const DATA' E 'const HOSPS' QUE VOCÊ COPIOU DO CLAUDE]
-    // A lógica JavaScript abaixo é idêntica à sua para manter o funcionamento dos cálculos.
-    
-    // (Mantenha todas as suas funções: renderAll, renderKPIs, renderRankingMeta, etc.)
-    // Apenas troque as funções que geram o HTML (document.getElementById('...').innerHTML) 
-    // para usarem as novas classes CSS: 'badge-green', 'kpi-card', 'rank-card', etc.
-</script>
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const HOSPS=['H. Mestre Vitalino','H. Dom Helder Câmara','H. Miguel Arraes','H. Nª Sra. Graças','H. Pelópidas Silveira'];
+const HOSPS_FULL=['Mestre Vitalino','Dom Helder Câmara','Miguel Arraes','Nª Sra. Graças','Pelópidas Silveira'];
+const OSS=['HTRI','FGH','FGH','FGH','FGH'];
+const LEITOS=[381,175,180,290,180];
+const CORES=['#185FA5','#1D9E75','#BA7517','#993556','#533AB7'];
+const CORES_LIGHT=['#B5D4F4','#9FE1CB','#FAC775','#F4C0D1','#CECBF6'];
+const IND_CORES=['#185FA5','#1D9E75','#BA7517','#993556','#533AB7'];
 
-</body>
-</html>
+const DATA={
+  cm:{
+    prod:[[3778,3584,3083,4000,4014,3521,4425,3944,4116,4330,4762,3875],[1430,1277,1100,1245,1246,1206,1442,1105,1313,1311,1210,1184],[1988,1870,1516,1900,1863,1634,1965,1756,1823,1998,1667,1596],[1999,2113,2111,2659,2745,2701,2951,2537,2481,2294,2176,2167],[1386,1304,1226,1479,1348,1441,1553,1413,1423,1730,1308,1242]],
+    pct:[[1.3493,1.28,1.1011,1.4286,1.4336,1.2575,1.5804,1.4086,1.47,1.5464,1.7007,1.3839],[0.5675,0.5067,0.4365,0.494,0.4944,0.4786,0.5722,0.4385,0.521,0.5202,0.4802,0.4698],[0.9045,0.8508,0.6897,0.8644,1.1881,1.0421,1.2532,1.1199,1.1626,1.2742,1.0631,1.0179],[1.1899,1.2577,1.2565,1.5827,1.6339,1.6077,1.7565,1.5101,1.4768,1.3655,1.2952,1.2899],[0.99,0.9314,0.8757,1.0564,0.9629,1.0293,1.1093,1.0093,1.0164,1.2357,0.9343,0.8871]]
+  },
+  cnm:{
+    prod:[[4375,4445,3745,4668,3959,3376,4228,3820,3724,4387,3650,4127],[575,547,477,568,470,376,420,644,601,709,642,612],[null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null],[881,847,722,905,870,813,912,970,858,866,751,744]],
+    pct:[[2.4858,2.5256,2.1278,2.6523,2.2494,1.9182,2.4023,2.1705,2.1159,2.4926,2.0739,2.3449],[0.1216,0.1156,0.1008,0.1201,0.0994,0.0795,0.0888,0.1362,0.1271,0.1499,0.1357,0.1294],[null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null],[1.2586,1.21,1.0314,1.2929,1.2429,1.1614,1.3029,1.3857,1.2257,1.2371,1.0729,1.0629]]
+  },
+  sh:{
+    prod:[[1508,1526,1679,1723,1786,1599,1797,1969,1839,1969,1838,1834],[932,898,946,920,985,759,802,897,714,933,880,920],[1235,1122,1138,1126,1106,1041,1114,1158,1121,1134,1150,1147],[629,625,691,678,731,732,761,753,719,753,635,718],[946,846,899,863,844,917,1008,908,923,865,829,894]],
+    pct:[[1.117,1.1304,1.2437,1.2763,1.323,1.1844,1.3311,1.4585,1.3622,1.4585,1.3615,1.3585],[1.0888,1.0491,1.1051,1.0748,1.1507,0.8867,0.9369,1.0479,0.8341,1.09,1.028,1.0748],[1.4702,1.3357,1.3548,1.3405,1.3167,1.2393,1.3262,1.3786,1.3345,1.35,1.369,1.3655],[0.6036,0.5998,0.6631,0.6507,0.7015,0.7025,1.0871,1.0757,1.0271,1.0757,0.9071,1.0257],[1.5016,1.3429,1.427,1.3698,1.3397,1.4556,1.6,1.4413,1.4651,1.373,1.3159,1.419]]
+  },
+  cr:{
+    prod:[[625,563,598,617,662,599,422,595,573,617,591,631],[705,606,718,490,480,352,407,432,435,556,579,586],[598,553,558,562,597,564,597,641,707,744,644,701],[504,500,478,510,586,562,624,595,667,630,544,569],[324,197,380,360,399,418,513,429,425,432,406,370]],
+    pct:[[1.1792,1.0623,1.1283,1.1642,1.2491,1.1302,0.7962,1.1226,1.0811,1.1642,1.1151,1.1906],[1.0247,0.8808,1.0436,0.7122,0.6977,0.5116,0.5916,0.6279,0.6323,0.8081,0.8416,0.8517],[0.9492,0.8778,0.8857,0.8921,0.9476,0.8952,0.9476,1.0175,1.1222,1.181,1.0222,1.1127],[0.96,0.9524,0.9105,0.9714,1.1959,1.1469,1.2735,1.2143,1.3612,1.2857,1.1102,1.1612],[1.5805,0.961,1.8537,1.7561,1.9463,2.039,2.5024,2.0927,2.0732,2.1073,1.9805,1.8049]]
+  },
+  ue:{
+    prod:[[4031,3830,4241,4277,4558,3979,4450,4225,4114,4860,4470,4578],[3187,2945,2993,3095,3167,2484,2814,2853,2362,2862,2811,2793],[3746,3344,3471,3327,3455,3325,3640,3832,3752,3861,3709,3870],[null,null,null,null,null,null,null,null,null,null,null,null],[2822,2361,2598,1506,2360,2770,3122,2893,2905,2625,2497,2508]],
+    pct:[[0.8577,0.8149,0.9023,0.91,0.9698,0.8466,0.9468,0.8989,0.8753,1.034,0.9511,0.974],[1.1277,1.0421,1.0591,1.0952,1.1207,0.879,0.9958,1.0096,0.8358,1.0127,0.9947,0.9883],[1.7838,1.5924,1.6529,1.5843,1.6452,1.5833,1.7333,1.8248,1.7867,1.8386,1.7662,1.8429],[null,null,null,null,null,null,null,null,null,null,null,null],[2.0157,1.6864,1.8557,1.0757,1.6857,1.9786,2.23,2.0664,2.075,1.875,1.7836,1.7914]]
+  }
+};
+
+const INDS=['cm','cnm','sh','cr','ue'];
+const IND_NOMES={cm:'Consultas Médicas',cnm:'Consultas Não Médicas',sh:'Saídas Hospitalares',cr:'Cirurgias Realizadas',ue:'Urgência e Emergência'};
+let charts={};
+let currentTab='ranking-meta';
+
+function getInd(){return document.getElementById('sel-ind').value}
+function getMes(){return document.getElementById('sel-mes').value}
+
+function avgPct(h,ik,mes){
+  const p=DATA[ik].pct[h];if(!p)return null;
+  if(mes==='all'){const v=p.filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
+  return p[+mes]
+}
+function totalProd(h,ik,mes){
+  const p=DATA[ik].prod[h];if(!p)return null;
+  if(mes==='all')return p.filter(x=>x!==null).reduce((a,b)=>a+b,0);
+  return p[+mes]
+}
+function hospAvg(h,mes){
+  let s=0,c=0;INDS.forEach(ik=>{const v=avgPct(h,ik,mes);if(v!==null){s+=v;c++}});return c?s/c:null
+}
+function statusClr(v){if(v===null)return'#888';if(v>=1)return'#1D9E75';if(v>=0.85)return'#BA7517';return'#E24B4A'}
+function badgeCls(v){if(v===null)return'amber';if(v>=1)return'green';if(v>=0.85)return'amber';return'red'}
+function pctLbl(v){return v===null?'N/D':(v*100).toFixed(1)+'%'}
+function numFmt(v){return v===null?'—':v.toLocaleString('pt-BR')}
+function medal(i){return i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}º`}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
+function renderKPIs(){
+  const ind=getInd();const mes=getMes();
+  const indKeys=ind==='all'?INDS:[ind];
+  let totP=0,sumPct=0,cntPct=0,acima=0,abaixo=0;
+  [0,1,2,3,4].forEach(h=>indKeys.forEach(ik=>{
+    const p=totalProd(h,ik,mes);if(p)totP+=p;
+    const v=avgPct(h,ik,mes);if(v!==null){sumPct+=v;cntPct++;if(v>=0.85)acima++;else abaixo++}
+  }));
+  const gPct=cntPct?sumPct/cntPct:null;
+  let bestH=-1,bestV=-Infinity;
+  [0,1,2,3,4].forEach(h=>{const v=hospAvg(h,mes);if(v!==null&&v>bestV){bestV=v;bestH=h}});
+  const kpis=[
+    {lbl:'Produção Total',val:totP.toLocaleString('pt-BR'),sub:'Todos indicadores',cls:'blue'},
+    {lbl:'% Meta Consolidado',val:pctLbl(gPct),sub:'Média geral',cls:gPct>=1?'green':gPct>=0.85?'amber':'red'},
+    {lbl:'Acima da Meta',val:acima,sub:'Indicadores ≥ 85%',cls:'green'},
+    {lbl:'Abaixo da Meta',val:abaixo,sub:'Requer atenção',cls:abaixo>0?'red':'green'},
+    {lbl:'Melhor Desempenho',val:bestH>=0?HOSPS_FULL[bestH].split(' ')[0]:'-',sub:bestH>=0?pctLbl(bestV)+' médio':'',cls:'green'},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi ${k.cls}"><div class="lbl">${k.lbl}</div><div class="val">${k.val}</div><div class="sub">${k.sub}</div></div>`).join('');
+}
+
+function renderRankingMeta(){
+  const ind=getInd();const mes=getMes();
+  const indKeys=ind==='all'?INDS:[ind];
+  const grid=document.getElementById('rank-meta-grid');
+  grid.innerHTML='';
+
+  indKeys.forEach((ik,ii)=>{
+    const entries=[0,1,2,3,4].map(h=>({h,v:avgPct(h,ik,mes),prod:totalProd(h,ik,mes)})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
+    const ndEntries=[0,1,2,3,4].filter(h=>avgPct(h,ik,mes)===null);
+    if(!entries.length&&!ndEntries.length)return;
+    const maxV=entries.length?entries[0].v:1;
+    const maxProd=entries.length?Math.max(...entries.map(e=>e.prod||0)):1;
+
+    const card=document.createElement('div');
+    card.className='rank-card';
+    card.innerHTML=`<div class="card-head"><span class="dot" style="background:${IND_CORES[ii%5]}"></span>${IND_NOMES[ik]}</div>
+    <div class="col-hdr meta-hdr"><span></span><span>Hospital</span><span style="text-align:right">Produção</span><span style="text-align:right">% Meta</span><span style="text-align:right">Barra</span></div>`;
+
+    entries.forEach((s,i)=>{
+      const barW=Math.round(s.v/maxV*100);
+      const clr=statusClr(s.v);
+      const row=document.createElement('div');
+      row.className='rank-row meta-row';
+      row.innerHTML=`
+        <span class="rank-pos">${medal(i)}</span>
+        <span class="rank-name" style="color:${CORES[s.h]}">${HOSPS[s.h]}</span>
+        <span class="rank-prod">${numFmt(s.prod)}</span>
+        <span class="rank-pct" style="color:${clr}">${pctLbl(s.v)}</span>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${clr}"></div></div>
+      `;
+      card.appendChild(row);
+    });
+    ndEntries.forEach(h=>{
+      const row=document.createElement('div');
+      row.className='rank-row meta-row';
+      row.style.opacity='.35';
+      row.innerHTML=`<span class="rank-pos">—</span><span class="rank-name">${HOSPS[h]}</span><span class="rank-prod">—</span><span class="rank-pct">N/D</span><div class="rank-bar-wrap"></div>`;
+      card.appendChild(row);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function renderRankingVol(){
+  const ind=getInd();const mes=getMes();
+  const indKeys=ind==='all'?INDS:[ind];
+  const grid=document.getElementById('rank-vol-grid');
+  grid.innerHTML='';
+
+  indKeys.forEach((ik,ii)=>{
+    const entries=[0,1,2,3,4].map(h=>({h,prod:totalProd(h,ik,mes),pct:avgPct(h,ik,mes)})).filter(x=>x.prod!==null).sort((a,b)=>b.prod-a.prod);
+    const ndEntries=[0,1,2,3,4].filter(h=>totalProd(h,ik,mes)===null);
+    if(!entries.length)return;
+    const maxProd=entries[0].prod;
+
+    const card=document.createElement('div');
+    card.className='rank-card';
+    card.innerHTML=`<div class="card-head"><span class="dot" style="background:${IND_CORES[ii%5]}"></span>${IND_NOMES[ik]}</div>
+    <div class="col-hdr vol-hdr"><span></span><span>Hospital</span><span style="text-align:right">Volume Prod.</span><span style="text-align:right">% Meta</span></div>`;
+
+    entries.forEach((s,i)=>{
+      const barW=Math.round(s.prod/maxProd*100);
+      const clrVol=CORES[s.h];
+      const clrPct=statusClr(s.pct);
+      const row=document.createElement('div');
+      row.className='rank-row vol-row';
+      row.innerHTML=`
+        <span class="rank-pos">${medal(i)}</span>
+        <span class="rank-name" style="color:${CORES[s.h]}">${HOSPS[s.h]}</span>
+        <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">
+          <div class="rank-vol-bar" style="width:60px"><div class="rank-vol-fill" style="width:${barW}%;background:${clrVol}"></div></div>
+          <span class="rank-vol">${numFmt(s.prod)}</span>
+        </div>
+        <span class="rank-pct" style="color:${clrPct};text-align:right">${pctLbl(s.pct)}</span>
+      `;
+      card.appendChild(row);
+    });
+    ndEntries.forEach(h=>{
+      const row=document.createElement('div');
+      row.className='rank-row vol-row';
+      row.style.opacity='.35';
+      row.innerHTML=`<span class="rank-pos">—</span><span class="rank-name">${HOSPS[h]}</span><div style="text-align:right">—</div><span style="text-align:right">N/D</span>`;
+      card.appendChild(row);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function renderConsolidado(){
+  const ind=getInd();const mes=getMes();
+  const indKeys=ind==='all'?INDS:[ind];
+  const scores=[0,1,2,3,4].map(h=>{
+    let s=0,c=0,acima=0,total=0,prodTotal=0;
+    indKeys.forEach(ik=>{
+      const v=avgPct(h,ik,mes);if(v!==null){s+=v;c++;total++;if(v>=0.85)acima++}
+      const p=totalProd(h,ik,mes);if(p)prodTotal+=p;
+    });
+    const pct=c?s/c:null;
+    const ef=+(prodTotal/LEITOS[h]).toFixed(1);
+    return{h,pct,ef,acima,total,prodTotal}
+  }).sort((a,b)=>(b.pct||0)-(a.pct||0));
+
+  destroyChart('consol');
+  const ctx=document.getElementById('ch-consol').getContext('2d');
+  charts['consol']=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:scores.map(s=>HOSPS[s.h]),
+      datasets:[{
+        label:'% Meta Médio',
+        data:scores.map(s=>s.pct?+(s.pct*100).toFixed(1):null),
+        backgroundColor:scores.map(s=>!s.pct?'#ddd':s.pct>=1?'#9FE1CB':s.pct>=0.85?'#FAC775':'#F7C1C1'),
+        borderColor:scores.map(s=>!s.pct?'#aaa':s.pct>=1?'#1D9E75':s.pct>=0.85?'#BA7517':'#E24B4A'),
+        borderWidth:2,borderRadius:4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},
+      scales:{
+        y:{ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.04)'},min:0,max:Math.max(220,...scores.map(s=>s.pct?s.pct*100:0))+30},
+        x:{ticks:{font:{size:10}}}
+      }
+    }
+  });
+
+  const tbl=document.getElementById('consol-table');
+  tbl.innerHTML=`<tr><th>Pos.</th><th>Hospital</th><th>OSS</th><th>Leitos</th><th>Produção Total</th><th>% Meta Médio</th><th>Prod/Leito</th><th>Ind. c/Meta</th><th>Status</th></tr>`;
+  scores.forEach((s,i)=>{
+    const bc=badgeCls(s.pct);
+    const barW=s.pct?Math.min(100,Math.round(s.pct*100)):0;
+    const clr=statusClr(s.pct);
+    tbl.innerHTML+=`<tr${i===0?' class="winner"':''}>
+      <td>${medal(i)}</td>
+      <td style="font-weight:500;color:${CORES[s.h]}">${HOSPS_FULL[s.h]}</td>
+      <td>${OSS[s.h]}</td>
+      <td>${LEITOS[s.h]}</td>
+      <td style="font-weight:500">${numFmt(s.prodTotal)}</td>
+      <td><div class="progress-cell"><div class="prog-bar"><div class="prog-fill" style="width:${barW}%;background:${clr}"></div></div><span style="color:${clr};font-weight:500;font-size:11px;white-space:nowrap">${pctLbl(s.pct)}</span></div></td>
+      <td>${s.ef.toLocaleString('pt-BR')}</td>
+      <td>${s.acima}/${s.total}</td>
+      <td><span class="badge ${bc}">${bc==='green'?'Acima Meta':bc==='amber'?'Na Meta':'Abaixo'}</span></td>
+    </tr>`;
+  });
+}
+
+function renderComp(){
+  const ind=getInd();const mes=getMes();const indKeys=ind==='all'?INDS:[ind];
+  const prodData=[0,1,2,3,4].map(h=>{let s=0;indKeys.forEach(ik=>{const v=totalProd(h,ik,mes);if(v)s+=v});return s});
+  const pctData=[0,1,2,3,4].map(h=>{let s=0,c=0;indKeys.forEach(ik=>{const v=avgPct(h,ik,mes);if(v!==null){s+=v;c++}});return c?+(s/c*100).toFixed(1):null});
+  document.getElementById('leg-comp').innerHTML=[0,1,2,3,4].map(h=>`<span><b style="background:${CORES[h]}"></b>${HOSPS[h]}</span>`).join('');
+  destroyChart('comp');
+  const ctx=document.getElementById('ch-comp').getContext('2d');
+  charts['comp']=new Chart(ctx,{
+    data:{labels:HOSPS,datasets:[
+      {type:'bar',label:'Produção Total',data:prodData,backgroundColor:[0,1,2,3,4].map(h=>CORES_LIGHT[h]),borderColor:[0,1,2,3,4].map(h=>CORES[h]),borderWidth:1,borderRadius:3,yAxisID:'y',order:2},
+      {type:'line',label:'% Meta',data:pctData,borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,0.06)',pointBackgroundColor:pctData.map(v=>v>=100?'#1D9E75':v>=85?'#BA7517':'#E24B4A'),pointRadius:6,borderWidth:2,yAxisID:'y2',order:1,tension:0.3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.datasetIndex===1?c.raw+'%':c.raw?.toLocaleString('pt-BR'))}}},
+      scales:{y:{type:'linear',position:'left',ticks:{font:{size:10},callback:v=>v.toLocaleString('pt-BR')},grid:{color:'rgba(0,0,0,0.04)'}},
+        y2:{type:'linear',position:'right',ticks:{font:{size:10},callback:v=>v+'%'},grid:{drawOnChartArea:false},min:0,max:Math.max(200,...pctData.filter(Boolean))+20}}}
+  });
+}
+
+function renderTendencia(){
+  const ind=getInd();const indKeys=ind==='all'?INDS:[ind];
+  document.getElementById('leg-tend').innerHTML=[0,1,2,3,4].map(h=>`<span><b style="background:${CORES[h]}"></b>${HOSPS[h]}</span>`).join('');
+  const datasets=[0,1,2,3,4].map(h=>({
+    label:HOSPS[h],
+    data:MESES.map((_,mi)=>{let s=0,c=0;indKeys.forEach(ik=>{const v=avgPct(h,ik,mi.toString());if(v!==null){s+=v;c++}});return c?+(s/c*100).toFixed(1):null}),
+    borderColor:CORES[h],backgroundColor:CORES[h]+'22',
+    pointBackgroundColor:MESES.map((_,mi)=>{let s=0,c=0;indKeys.forEach(ik=>{const v=avgPct(h,ik,mi.toString());if(v!==null){s+=v;c++}});const avg=c?s/c:null;return avg>=1?'#1D9E75':avg>=0.85?'#BA7517':'#E24B4A'}),
+    pointRadius:4,borderWidth:2,tension:0.35,spanGaps:true
+  }));
+  destroyChart('tend');
+  const ctx=document.getElementById('ch-tend').getContext('2d');
+  charts['tend']=new Chart(ctx,{type:'line',data:{labels:MESES,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.raw+'%'}}},
+      scales:{y:{ticks:{font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.04)'},afterDataLimits:s=>{s.max=Math.max(s.max,220);s.min=Math.max(0,s.min-10)}}}}
+  });
+  setTimeout(()=>{
+    const ch=charts['tend'];if(!ch)return;
+    const c2=ch.ctx,ya=ch.scales.y,xa=ch.scales.x;
+    [85,100].forEach(line=>{
+      const y=ya.getPixelForValue(line);
+      c2.save();c2.setLineDash([5,5]);c2.strokeStyle=line===85?'#BA7517':'#1D9E75';
+      c2.lineWidth=1;c2.globalAlpha=0.6;c2.beginPath();c2.moveTo(xa.left,y);c2.lineTo(xa.right,y);c2.stroke();
+      c2.setLineDash([]);c2.globalAlpha=1;c2.font='10px sans-serif';c2.fillStyle=line===85?'#BA7517':'#1D9E75';
+      c2.fillText(line+'%',xa.right+4,y+4);c2.restore();
+    });
+  },100);
+}
+
+function renderEficiencia(){
+  const ind=getInd();const mes=getMes();const indKeys=ind==='all'?INDS:[ind];
+  document.getElementById('leg-ef').innerHTML=[0,1,2,3,4].map(h=>`<span><b style="background:${CORES[h]}"></b>${HOSPS[h]}</span>`).join('');
+  const efData=[0,1,2,3,4].map(h=>{let s=0;indKeys.forEach(ik=>{const v=totalProd(h,ik,mes);if(v)s+=v});return+(s/LEITOS[h]).toFixed(1)});
+  const pctData=[0,1,2,3,4].map(h=>{let s=0,c=0;indKeys.forEach(ik=>{const v=avgPct(h,ik,mes);if(v!==null){s+=v;c++}});return c?+(s/c*100).toFixed(1):null});
+  destroyChart('ef');
+  const ctx=document.getElementById('ch-ef').getContext('2d');
+  charts['ef']=new Chart(ctx,{
+    data:{labels:HOSPS,datasets:[
+      {type:'bar',label:'Produção/Leito',data:efData,backgroundColor:[0,1,2,3,4].map(h=>CORES_LIGHT[h]),borderColor:[0,1,2,3,4].map(h=>CORES[h]),borderWidth:1,borderRadius:3,yAxisID:'y',order:2},
+      {type:'line',label:'% Meta',data:pctData,borderColor:'#E24B4A',pointBackgroundColor:pctData.map(v=>v>=100?'#1D9E75':v>=85?'#BA7517':'#E24B4A'),pointRadius:6,borderWidth:2,yAxisID:'y2',order:1,tension:0.3}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.datasetIndex===1?c.raw+'%':c.raw)}}},
+      scales:{y:{type:'linear',position:'left',ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},
+        y2:{type:'linear',position:'right',ticks:{font:{size:10},callback:v=>v+'%'},grid:{drawOnChartArea:false}}}}
+  });
+}
+
+function showTab(name,btn){
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.style.display='none');
+  document.getElementById('tab-'+name).style.display='';
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab=name;renderTab(name);
+}
+function renderTab(name){
+  if(name==='ranking-meta')renderRankingMeta();
+  else if(name==='ranking-vol')renderRankingVol();
+  else if(name==='consolidado')renderConsolidado();
+  else if(name==='comparativo')renderComp();
+  else if(name==='tendencia')renderTendencia();
+  else if(name==='eficiencia')renderEficiencia();
+}
+function renderAll(){renderKPIs();renderTab(currentTab)}
+renderAll();
+</script>
